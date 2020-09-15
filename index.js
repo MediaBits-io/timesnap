@@ -173,25 +173,50 @@ module.exports = function (config) {
       }).then(function () {
         log('Going to ' + url + '...');
         return page.goto(url, { waitUntil: 'networkidle0' });
-      }).then(function () {
+      }).then(async function () {
+        var browserTime = 0
+        var browserFrames = getBrowserFrames(page.mainFrame());
+
+        if ('preparePageRealtime' in config) {
+          log('Preparing page in realtime...');
+
+          let done = false;
+
+          config.preparePageRealtime(page).then(() => {
+            done = true
+          })
+
+          await new Promise((resolve) => {
+            const interval = setInterval(async () => {
+              if (done) {
+                clearInterval(interval)
+                resolve()
+              } else {
+                browserTime += 1
+                await timeHandler.goToTimeAndAnimate(browserFrames, browserTime)
+              }
+            }, 1)
+          })
+        }
+
         log('Page loaded');
+
         if ('preparePage' in config) {
           log('Preparing page before screenshots...');
-          return Promise.resolve(config.preparePage(page)).then(function () {
+          await Promise.resolve(config.preparePage(page)).then(function () {
             log('Page prepared');
           });
         }
-      }).then(function () {
-        return new Promise(function (resolve) {
+
+        await new Promise(function (resolve) {
           setTimeout(resolve, startWaitMs);
         });
-      }).then(function () {
-        var browserFrames = getBrowserFrames(page.mainFrame());
+
         var captureTimes = [];
         if (capturer.beforeCapture) {
           // run beforeCapture right before any capture frames
           addMarker({
-            time: delayMs + frameNumToTime(1, framesToCapture),
+            time: delayMs + browserTime + frameNumToTime(1, framesToCapture),
             type: 'Run Function',
             data: {
               fn: function () {
@@ -267,7 +292,7 @@ module.exports = function (config) {
                   frameCount: marker.data.frameCount,
                   framesToCapture: framesToCapture
                 });
-              })
+              });
             }
 
             if (config.preparePageForScreenshot) {
@@ -289,7 +314,7 @@ module.exports = function (config) {
             }
             if (capturer.capture) {
               p = p.then(function () {
-                if (skipCurrentFrame) {  
+                if (skipCurrentFrame) {
                   return;
                 }
 
