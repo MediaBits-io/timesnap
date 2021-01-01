@@ -187,19 +187,25 @@ module.exports = function (config) {
           log('Preparing page in realtime...');
 
           let done = false;
+          let error;
 
           config.preparePageRealtime(page).then(() => {
-            done = true
+            done = true;
+          }).catch((e) => {
+            error = e;
           })
 
-          await new Promise((resolve) => {
+          await new Promise((resolve, reject) => {
             const interval = setInterval(async () => {
-              if (done) {
-                clearInterval(interval)
-                resolve()
-              } else {
-                browserTime += 1
-                await timeHandler.goToTimeAndAnimate(browserFrames, browserTime)
+                browserTime += 1;
+                await timeHandler.goToTimeAndAnimate(browserFrames, browserTime);
+
+              if (error) {
+                clearInterval(interval);
+                reject(error);
+              } else if (done) {
+                clearInterval(interval);
+                resolve();
               }
             }, 1)
           })
