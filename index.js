@@ -186,19 +186,20 @@ module.exports = function (config) {
         if ('preparePageRealtime' in config) {
           log('Preparing page in realtime...');
 
-          let done = false;
-          let error;
-
-          config.preparePageRealtime(page).then(() => {
-            done = true;
-          }).catch((e) => {
-            error = e;
-          })
-
           await new Promise((resolve, reject) => {
-            const interval = setInterval(async () => {
-                browserTime += 1;
-                await timeHandler.goToTimeAndAnimate(browserFrames, browserTime);
+            let done = false;
+            let error;
+
+            config.preparePageRealtime(page)
+              .then(() => {
+                done = true;
+              }).catch((e) => {
+                error = e;
+              })
+          
+            const interval = setInterval(() => {
+              browserTime += 1;
+              timeHandler.goToTimeAndAnimate(browserFrames, browserTime);
 
               if (error) {
                 clearInterval(interval);
