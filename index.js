@@ -169,10 +169,6 @@ module.exports = function (config) {
       }).then(function () {
         return timeHandler.overwriteTime(page);
       }).then(function () {
-        return initializePageUtils(page);
-      }).then(function () {
-        return initializeMediaTimeHandler(page);
-      }).then(function () {
         if (typeof config.navigatePageToURL === 'function') {
           return config.navigatePageToURL({ page, url, log });
         } else {
